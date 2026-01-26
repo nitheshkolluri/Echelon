@@ -4,6 +4,7 @@ import { Agent, MarketState } from "../types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 const MODEL_NAME = 'gemini-3-flash-preview';
+const PRO_MODEL_NAME = 'gemini-3-pro-preview';
 
 export const analyzeIdeaAndCreateMarket = async (idea: string, region: string): Promise<{
   agents: Partial<Agent>[];
@@ -152,7 +153,7 @@ export const generateFinalAnalysis = async (marketState: MarketState): Promise<F
   const leaderAgent = [...marketState.agents].sort((a,b) => b.marketShare - a.marketShare)[0];
   
   const response = await ai.models.generateContent({
-    model: MODEL_NAME,
+    model: PRO_MODEL_NAME,
     contents: `Create an elite, professional business feasibility report for ${marketState.region}.
     User Business (${userAgent.name}): ${(userAgent.marketShare * 100).toFixed(1)}% share, $${userAgent.revenue.toFixed(0)} total revenue.
     Market Leader (${leaderAgent.name}): ${(leaderAgent.marketShare * 100).toFixed(1)}% share, $${leaderAgent.revenue.toFixed(0)} revenue.
@@ -161,6 +162,7 @@ export const generateFinalAnalysis = async (marketState: MarketState): Promise<F
     "comparison" must compare User vs Leader on a 1-10 scale for: Pricing Strategy, Quality Standard, Brand Presence, Customer Loyalty, and Competitive Agility.
     "headToHead" should summarize the core financial and competitive deltas.`,
     config: {
+      thinkingConfig: { thinkingBudget: 16000 },
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
