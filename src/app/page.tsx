@@ -282,66 +282,81 @@ const App: React.FC = () => {
 
                     {/* Simulation Dashboard */}
                     {view === 'simulation' && marketState && (
-                        <motion.div key="simulation" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-grow flex flex-col h-screen overflow-hidden p-6 gap-6">
-
+                        <motion.div
+                            key="simulation"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="flex-grow flex flex-col overflow-y-auto p-4 sm:p-6 gap-4 sm:gap-6"
+                        >
                             {/* Top Bar */}
-                            <header className="flex justify-between items-center bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
+                            <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-slate-900/50 p-4 sm:p-6 rounded-2xl border border-slate-800 gap-4">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl"><MapPin size={20} /></div>
                                     <div>
-                                        <h2 className="font-bold text-lg leading-none">{marketState.region}</h2>
+                                        <h2 className="font-bold text-lg sm:text-xl leading-none">{marketState.region}</h2>
                                         <div className="text-xs text-slate-500 font-mono mt-1">Month {marketState.tick} / {marketState.maxTicks}</div>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-3">
+                                <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                                     <button
                                         onClick={() => setIsSimulating(!isSimulating)}
-                                        className={`px-8 py-3 rounded-xl font-bold flex items-center gap-3 transition-all shadow-lg ${isSimulating
+                                        className={`flex-1 sm:flex-none px-6 sm:px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-3 transition-all shadow-lg text-sm sm:text-base ${isSimulating
                                                 ? 'bg-amber-600 hover:bg-amber-700 text-white'
                                                 : marketState.tick === 0
                                                     ? 'bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse'
                                                     : 'bg-emerald-600 hover:bg-emerald-700 text-white'
                                             }`}
                                     >
-                                        {isSimulating ? <><Pause size={18} /> Pause</> : <><Play size={18} /> {marketState.tick === 0 ? 'Start Simulation' : 'Resume'}</>}
+                                        {isSimulating ? <><Pause size={18} /> Pause</> : <><Play size={18} /> {marketState.tick === 0 ? 'Start' : 'Resume'}</>}
                                     </button>
                                     {marketState.tick >= marketState.maxTicks && (
-                                        <button onClick={handleReportGeneration} className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg animate-pulse">
-                                            <BarChart3 size={16} /> Generate Report
+                                        <button
+                                            onClick={handleReportGeneration}
+                                            className="flex-1 sm:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-6 sm:px-8 py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg animate-pulse text-sm sm:text-base"
+                                        >
+                                            <BarChart3 size={18} /> View Report
                                         </button>
                                     )}
+                                    <button
+                                        onClick={reset}
+                                        className="p-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl transition-all"
+                                        title="Reset Simulation"
+                                    >
+                                        <RotateCcw size={18} />
+                                    </button>
                                 </div>
                             </header>
 
-                            <div className="grid grid-cols-12 gap-6 flex-grow min-h-0">
+                            {/* Main Content Grid - Responsive */}
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 flex-grow">
 
                                 {/* Left Col: Stats & Leaderboard */}
-                                <div className="col-span-3 flex flex-col gap-6">
+                                <div className="lg:col-span-3 flex flex-col gap-4 sm:gap-6">
                                     <div className="grid grid-cols-2 gap-3">
                                         <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
                                             <div className="text-xs text-slate-500 uppercase font-bold mb-1">Total Rev</div>
-                                            <div className="text-xl font-mono text-emerald-400">{formatMoney(marketState.agents.reduce((s, a) => s + a.revenue, 0))}</div>
+                                            <div className="text-lg sm:text-xl font-mono text-emerald-400">{formatMoney(marketState.agents.reduce((s, a) => s + a.revenue, 0))}</div>
                                         </div>
                                         <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-800">
                                             <div className="text-xs text-slate-500 uppercase font-bold mb-1">Leader</div>
-                                            <div className="text-md font-bold truncate">{getWinner()?.name || '-'}</div>
+                                            <div className="text-sm sm:text-md font-bold truncate">{getWinner()?.name || '-'}</div>
                                         </div>
                                     </div>
 
-                                    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-5 flex-grow overflow-y-auto">
+                                    <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 sm:p-5 flex-grow overflow-y-auto max-h-[400px] lg:max-h-none">
                                         <h3 className="text-xs font-bold text-slate-500 uppercase mb-4 flex items-center gap-2"><Trophy size={14} /> Live Rankings</h3>
                                         <div className="space-y-3">
                                             {[...marketState.agents].sort((a, b) => b.marketShare - a.marketShare).map((agent, i) => (
                                                 <div key={agent.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className={`w-2 h-8 rounded-full ${i === 0 ? 'bg-yellow-500' : agent.role === 'startup' ? 'bg-indigo-500' : 'bg-slate-600'}`} />
-                                                        <div>
-                                                            <div className="font-bold text-sm">{agent.name}</div>
-                                                            <div className="text-[10px] text-slate-400">{agent.archetype}</div>
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <div className={`w-2 h-8 rounded-full flex-shrink-0 ${i === 0 ? 'bg-yellow-500' : agent.role === 'startup' ? 'bg-indigo-500' : 'bg-slate-600'}`} />
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="font-bold text-sm truncate">{agent.name}</div>
+                                                            <div className="text-[10px] text-slate-400 truncate">{agent.archetype}</div>
                                                         </div>
                                                     </div>
-                                                    <div className="text-right">
+                                                    <div className="text-right flex-shrink-0">
                                                         <div className="font-mono text-sm">{(agent.marketShare * 100).toFixed(1)}%</div>
                                                         <div className="text-[10px] text-emerald-500">{formatMoney(agent.revenue)}</div>
                                                     </div>
@@ -352,27 +367,28 @@ const App: React.FC = () => {
                                 </div>
 
                                 {/* Center Col: Main Chart */}
-                                <div className="col-span-6 bg-slate-900/50 border border-slate-800 rounded-3xl p-6 flex flex-col">
+                                <div className="lg:col-span-6 bg-slate-900/50 border border-slate-800 rounded-3xl p-4 sm:p-6 flex flex-col min-h-[400px]">
                                     <h3 className="text-sm font-bold text-slate-400 uppercase mb-4 flex items-center gap-2"><Activity size={16} /> Market Share Velocity</h3>
                                     <div className="flex-grow min-h-[300px]">
                                         <ResponsiveContainer width="100%" height="100%">
-                                            <AreaChart data={Array.from({ length: marketState.tick + 1 }, (_, t) => {
-                                                if (t === 0) return null; // Skip 0
+                                            <AreaChart data={Array.from({ length: (marketState?.tick || 0) + 1 }, (_, t) => {
+                                                if (t === 0) return null;
                                                 const d: any = { tick: t };
-                                                marketState.agents.forEach(a => {
+                                                marketState?.agents?.forEach(a => {
                                                     const hist = a.history.find(h => h.tick === t);
-                                                    d[a.name] = (hist?.share || a.marketShare) * 100; // Fallback to current
+                                                    const val = (hist?.share ?? a.marketShare ?? 0) * 100;
+                                                    d[a.name] = isNaN(val) ? 0 : val;
                                                 });
                                                 return d;
                                             }).filter(Boolean)}>
                                                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
                                                 <XAxis dataKey="tick" stroke="#475569" fontSize={10} axisLine={false} tickLine={false} />
-                                                <YAxis stroke="#475569" fontSize={10} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
+                                                <YAxis stroke="#475569" fontSize={10} axisLine={false} tickLine={false} tickFormatter={v => `${v.toFixed(0)}%`} />
                                                 <Tooltip
                                                     contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
                                                     itemStyle={{ fontSize: '12px' }}
                                                 />
-                                                {marketState.agents.map((a, i) => (
+                                                {marketState?.agents?.map((a, i) => (
                                                     <Area key={a.id} type="monotone" dataKey={a.name} stackId="1" stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.2} strokeWidth={2} />
                                                 ))}
                                             </AreaChart>
@@ -381,20 +397,22 @@ const App: React.FC = () => {
                                 </div>
 
                                 {/* Right Col: Logic Logs */}
-                                <div className="col-span-3 bg-black rounded-2xl border border-slate-800 p-4 flex flex-col font-mono text-xs">
+                                <div className="lg:col-span-3 bg-black rounded-2xl border border-slate-800 p-4 flex flex-col font-mono text-xs min-h-[400px] max-h-[600px] lg:max-h-none">
                                     <div className="flex items-center gap-2 text-slate-500 mb-4 pb-2 border-b border-white/10">
                                         <Terminal size={14} /> <div>SYSTEM_LOGS</div>
                                     </div>
-                                    <div className="flex-grow overflow-y-auto space-y-2 opacity-80 h-0 min-h-0">
-                                        {logs.map((log, i) => (
-                                            <div key={i} className="text-slate-300 break-words leading-relaxed">
-                                                <span className="text-slate-600 mr-2">{'>'}</span>{log}
-                                            </div>
-                                        ))}
-                                        <div ref={(el) => { el?.scrollIntoView({ behavior: 'smooth' }) }} />
+                                    <div className="flex-grow overflow-y-auto space-y-2 opacity-80">
+                                        {logs.length === 0 ? (
+                                            <div className="text-slate-600 text-center py-8">Awaiting simulation start...</div>
+                                        ) : (
+                                            logs.map((log, i) => (
+                                                <div key={i} className="text-slate-300 break-words leading-relaxed">
+                                                    <span className="text-slate-600 mr-2">{'>'}</span>{log}
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
-
                             </div>
                         </motion.div>
                     )}
