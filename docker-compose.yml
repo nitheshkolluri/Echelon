@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  echelon:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: echelon-by-gemini
+    container_name: echelon_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    networks:
+      - echelon_net
+
+networks:
+  echelon_net:
+    driver: bridge
