@@ -1,4 +1,4 @@
-"use client";
+"use server";
 
 import { GoogleGenAI } from "@google/genai";
 // Fallback if SchemaType is missing, we define SchemaTypeAny assuming standard enum values or just strings.
@@ -7,7 +7,7 @@ const SchemaTypeAny = { OBJECT: "OBJECT", ARRAY: "ARRAY", STRING: "STRING", NUMB
 
 import { Agent, MarketState } from "./types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.NEXT_PUBLIC_GEMINI_API_KEY || process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 const MODEL_NAME = 'gemini-2.0-flash-exp';
 const PRO_MODEL_NAME = 'gemini-2.0-flash-exp';
 
