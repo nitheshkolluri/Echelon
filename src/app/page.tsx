@@ -295,8 +295,16 @@ const App: React.FC = () => {
                                 </div>
 
                                 <div className="flex items-center gap-3">
-                                    <button onClick={() => setIsSimulating(!isSimulating)} className={`px-6 py-2 rounded-lg font-bold flex items-center gap-2 transition-all ${isSimulating ? 'bg-slate-800 text-white' : 'bg-green-600 text-white'}`}>
-                                        {isSimulating ? <Pause size={16} /> : <Play size={16} />} {isSimulating ? "Pause" : "Resume"}
+                                    <button
+                                        onClick={() => setIsSimulating(!isSimulating)}
+                                        className={`px-8 py-3 rounded-xl font-bold flex items-center gap-3 transition-all shadow-lg ${isSimulating
+                                                ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                                                : marketState.tick === 0
+                                                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white animate-pulse'
+                                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                                            }`}
+                                    >
+                                        {isSimulating ? <><Pause size={18} /> Pause</> : <><Play size={18} /> {marketState.tick === 0 ? 'Start Simulation' : 'Resume'}</>}
                                     </button>
                                     {marketState.tick >= marketState.maxTicks && (
                                         <button onClick={handleReportGeneration} className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg animate-pulse">
