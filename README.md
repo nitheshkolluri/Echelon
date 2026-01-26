@@ -52,9 +52,16 @@ Echelon uses **Gemini 2.0 Flash** to:
     ```
 
 2.  **Set API Key**
-    Create a `.env.local` file:
+    
+    Copy the example environment file and add your Gemini API key:
     ```bash
-    GEMINI_API_KEY=your_gemini_key_here
+    cp .env.example .env.local
+    ```
+    
+    Then edit `.env.local` and replace `your_gemini_api_key_here` with your actual API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+    
+    ```bash
+    GEMINI_API_KEY=your_actual_api_key_here
     ```
 
 3.  **Run**
