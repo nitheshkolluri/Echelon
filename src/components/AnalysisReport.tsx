@@ -32,7 +32,7 @@ const Card = ({ children, className = "" }: { children: React.ReactNode, classNa
 export const AnalysisReport = ({ finalAnalysis, marketState, onReset }: { finalAnalysis: FinalReportData, marketState: MarketState, onReset: () => void }) => {
 
     // Transform comparison data for Radar Chart
-    const radarData = finalAnalysis.comparison.map(c => ({
+    const radarData = (finalAnalysis.comparison || []).map(c => ({
         subject: c.attribute,
         User: c.user,
         Leader: c.leader,
@@ -125,7 +125,7 @@ export const AnalysisReport = ({ finalAnalysis, marketState, onReset }: { finalA
                 <Card className="lg:col-span-1">
                     <h3 className="text-lg font-bold text-slate-300 flex items-center gap-2 mb-6"><Zap size={18} className="text-yellow-500" /> Key Drivers</h3>
                     <div className="space-y-5">
-                        {finalAnalysis.successDrivers.map((item, i) => (
+                        {(finalAnalysis.successDrivers || []).map((item, i) => (
                             <div key={i}>
                                 <div className="flex justify-between text-xs font-bold text-slate-400 mb-2">
                                     <span>{item.factor}</span>
@@ -147,17 +147,17 @@ export const AnalysisReport = ({ finalAnalysis, marketState, onReset }: { finalA
                 {/* SWOT Grid */}
                 <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
-                        { title: 'Strengths', icon: Shield, color: 'text-emerald-400', items: finalAnalysis.swot.strengths, bg: 'bg-emerald-500/5', border: 'border-emerald-500/20' },
-                        { title: 'Weaknesses', icon: AlertTriangle, color: 'text-red-400', items: finalAnalysis.swot.weaknesses, bg: 'bg-red-500/5', border: 'border-red-500/20' },
-                        { title: 'Opportunities', icon: TrendingUp, color: 'text-blue-400', items: finalAnalysis.swot.opportunities, bg: 'bg-blue-500/5', border: 'border-blue-500/20' },
-                        { title: 'Threats', icon: XCircle, color: 'text-orange-400', items: finalAnalysis.swot.threats, bg: 'bg-orange-500/5', border: 'border-orange-500/20' },
+                        { title: 'Strengths', icon: Shield, color: 'text-emerald-400', items: finalAnalysis.swot?.strengths || [], bg: 'bg-emerald-500/5', border: 'border-emerald-500/20' },
+                        { title: 'Weaknesses', icon: AlertTriangle, color: 'text-red-400', items: finalAnalysis.swot?.weaknesses || [], bg: 'bg-red-500/5', border: 'border-red-500/20' },
+                        { title: 'Opportunities', icon: TrendingUp, color: 'text-blue-400', items: finalAnalysis.swot?.opportunities || [], bg: 'bg-blue-500/5', border: 'border-blue-500/20' },
+                        { title: 'Threats', icon: XCircle, color: 'text-orange-400', items: finalAnalysis.swot?.threats || [], bg: 'bg-orange-500/5', border: 'border-orange-500/20' },
                     ].map((s, i) => (
                         <Card key={i} className={`${s.bg} ${s.border}`}>
                             <h4 className={`font-bold flex items-center gap-2 mb-4 ${s.color}`}>
                                 <s.icon size={16} /> {s.title}
                             </h4>
                             <ul className="space-y-2">
-                                {s.items.slice(0, 2).map((item, idx) => (
+                                {(s.items || []).slice(0, 2).map((item, idx) => (
                                     <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
                                         <span className="mt-1 w-1 h-1 rounded-full bg-slate-500 shrink-0" /> {item}
                                     </li>

@@ -1,21 +1,109 @@
-version: '3.8'
-
 services:
-  echelon:
+  # Infrastructure
+  postgres:
+    image: postgres:15-alpine
+    container_name: echelon-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: echelon-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # API Gateway
+  gateway:
+    build:
+      context: .
+      dockerfile: ./backend/gateway/Dockerfile
+    container_name: echelon-gateway
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - GATEWAY_PORT=4000
+      - AUTH_SERVICE_URL=http://auth-service:3001
+      - SIMULATION_SERVICE_URL=http://simulation-service:3002
+      - REPORT_SERVICE_URL=http://report-service:3003
+      - FRONTEND_URL=http://localhost:3000
+    depends_on:
+      - auth-service
+      - simulation-service
+      - report-service
+
+  # Microservices
+  auth-service:
+    build:
+      context: .
+      dockerfile: ./backend/services/auth/Dockerfile
+    container_name: echelon-auth-service
+    environment:
+      - NODE_ENV=production
+      - AUTH_SERVICE_PORT=3001
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  simulation-service:
+    build:
+      context: .
+      dockerfile: ./backend/services/simulation/Dockerfile
+    container_name: echelon-simulation-service
+    environment:
+      - NODE_ENV=production
+      - SIMULATION_SERVICE_PORT=3002
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  report-service:
+    build:
+      context: .
+      dockerfile: ./backend/services/report/Dockerfile
+    container_name: echelon-report-service
+    environment:
+      - NODE_ENV=production
+      - REPORT_SERVICE_PORT=3003
+    depends_on:
+      - postgres
+
+  # Frontend
+  frontend:
     build:
       context: .
       dockerfile: Dockerfile
-    image: echelon-by-gemini
-    container_name: echelon_app
-    restart: unless-stopped
+    container_name: echelon-frontend
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - GEMINI_API_KEY=${GEMINI_API_KEY}
-    networks:
-      - echelon_net
+      - NEXT_PUBLIC_API_URL=http://localhost:4000/api
+    depends_on:
+      - gateway
 
-networks:
-  echelon_net:
-    driver: bridge
+volumes:
+  postgres_data:

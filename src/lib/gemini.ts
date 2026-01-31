@@ -1,118 +1,171 @@
 "use server";
 
 import { GoogleGenAI } from "@google/genai";
-// Fallback if SchemaType is missing, we define SchemaTypeAny assuming standard enum values or just strings.
-// Since we can't import SchemaType (it might be missing in this version), we mock it.
-const SchemaTypeAny = { OBJECT: "OBJECT", ARRAY: "ARRAY", STRING: "STRING", NUMBER: "NUMBER", BOOLEAN: "BOOLEAN" };
-
 import { Agent, MarketState } from "./types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-const MODEL_NAME = 'gemini-2.0-flash-exp';
-const PRO_MODEL_NAME = 'gemini-2.0-flash-exp';
+const MODEL_NAME = 'gemini-2.0-flash';
+const PRO_MODEL_NAME = 'gemini-2.0-flash';
 
-async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+/**
+ * GEMINI GUARD: A robust, production-grade Request Manager
+ * Implements: Token Bucket (Rate Limiting), Exponential Backoff with Jitter, and Circuit Breaker logic.
+ */
+class GeminiGuard {
+    private tokens: number;
+    private maxTokens: number;
+    private refillRate: number; // tokens per second
+    private lastRefill: number;
+    private queue: { resolve: () => void; priority: number }[] = [];
+
+    // Circuit Breaker State
+    private failureCount: number = 0;
+    private lastFailureTime: number = 0;
+    private isOpen: boolean = false;
+    private readonly FAILURE_THRESHOLD = 5;
+    private readonly COOL_DOWN_PERIOD = 30000; // 30s
+
+    constructor(rpm: number = 10) { // Default to a conservative 10 RPM for experimental
+        this.maxTokens = Math.max(1, rpm / 6); // Allow small bursts
+        this.tokens = this.maxTokens;
+        this.refillRate = rpm / 60;
+        this.lastRefill = Date.now();
+    }
+
+    private refill() {
+        const now = Date.now();
+        const delta = (now - this.lastRefill) / 1000;
+        this.tokens = Math.min(this.maxTokens, this.tokens + delta * this.refillRate);
+        this.lastRefill = now;
+    }
+
+    private checkCircuit() {
+        if (this.isOpen) {
+            if (Date.now() - this.lastFailureTime > this.COOL_DOWN_PERIOD) {
+                this.isOpen = false;
+                this.failureCount = 0;
+                console.log("🛡️ Gemini Guard: Circuit closing (re-enabling requests)");
+            } else {
+                throw new Error("🚨 Circuit Breaker is OPEN. Gemini API is currently cooling down due to repeated failures.");
+            }
+        }
+    }
+
+    async acquire(priority: number = 1) {
+        this.checkCircuit();
+        this.refill();
+
+        if (this.tokens >= 1 && this.queue.length === 0) {
+            this.tokens -= 1;
+            return;
+        }
+
+        return new Promise<void>((resolve) => {
+            this.queue.push({ resolve, priority });
+            this.queue.sort((a, b) => b.priority - a.priority); // High priority first
+            this.processQueue();
+        });
+    }
+
+    private processQueue() {
+        if (this.queue.length === 0) return;
+
+        this.refill();
+        if (this.tokens >= 1) {
+            const next = this.queue.shift();
+            if (next) {
+                this.tokens -= 1;
+                next.resolve();
+                // Schedule next process with a small delay to avoid sub-second bursts
+                setTimeout(() => this.processQueue(), 100);
+            }
+        } else {
+            // Calculate wait time based on next token availability
+            const waitTime = ((1 - this.tokens) / this.refillRate) * 1000;
+            setTimeout(() => this.processQueue(), Math.max(100, waitTime));
+        }
+    }
+
+    recordFailure() {
+        this.failureCount++;
+        this.lastFailureTime = Date.now();
+        if (this.failureCount >= this.FAILURE_THRESHOLD) {
+            this.isOpen = true;
+            console.warn("🚨 Gemini Guard: Circuit opened due to excessive failures.");
+        }
+    }
+
+    recordSuccess() {
+        this.failureCount = 0;
+        this.isOpen = false;
+    }
+}
+
+const guard = new GeminiGuard(12); // Guarding at 12 RPM
+
+export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 5, priority = 1): Promise<T> {
     let lastError: any;
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
         try {
-            return await fn();
+            await guard.acquire(priority);
+            const result = await fn();
+            guard.recordSuccess();
+            return result;
         } catch (error: any) {
             lastError = error;
-            if (error?.message?.includes("429") && attempt < maxRetries - 1) {
-                await new Promise((resolve) => setTimeout(resolve, 2000 * Math.pow(2, attempt)));
+            const isRateLimit = error?.message?.includes("429") || error?.status === 429;
+
+            if (isRateLimit) {
+                guard.recordFailure(); // Rate limits count as failures for circuit breaking
+                const jitter = Math.random() * 1000;
+                const delay = (3000 * Math.pow(2, attempt)) + jitter;
+                console.log(`⏳ Rate limit detected. Backing off for ${Math.round(delay)}ms...`);
+                await new Promise(r => setTimeout(r, delay));
                 continue;
             }
+
+            // For other errors, maybe don't retry if they are terminal (e.g. 400 Bad Request)
+            if (error?.status === 400) throw error;
+
             throw error;
         }
     }
     throw lastError;
 }
 
+/**
+ * Generic helper to call Gemini with retry logic
+ */
+export const callGemini = async (prompt: string, isPro = false, priority = 1): Promise<string> => {
+    return withRetry(async () => {
+        try {
+            const response = await (ai as any).models.generateContent({
+                model: isPro ? PRO_MODEL_NAME : MODEL_NAME,
+                contents: prompt
+            });
+            const text = response.text;
+            return typeof text === 'function' ? text() : text;
+        } catch (error: any) {
+            console.error(`❌ Gemini API Error [${isPro ? 'PRO' : 'FLASH'}]:`, error.message);
+            throw error;
+        }
+    }, 5, priority);
+};
+
 export const analyzeIdeaAndCreateMarket = async (idea: string, region: string): Promise<{
     agents: Partial<Agent>[];
     marketContext: { visitsPerMonth: number; sentiment: number; description: string; };
 }> => {
-    return withRetry(async () => {
-        const response = await ai.models.generateContent({
-            model: MODEL_NAME,
-            contents: `Analyze this idea: "${idea}" in "${region}". Return JSON with 5 competitors (1 user, 4 real), visitsPerMonth, sentiment (0-1).`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: SchemaTypeAny.OBJECT,
-                    properties: {
-                        agents: {
-                            type: SchemaTypeAny.ARRAY,
-                            items: {
-                                type: SchemaTypeAny.OBJECT,
-                                properties: {
-                                    name: { type: SchemaTypeAny.STRING },
-                                    role: { type: SchemaTypeAny.STRING },
-                                    archetype: { type: SchemaTypeAny.STRING },
-                                    description: { type: SchemaTypeAny.STRING },
-                                    strategyStyle: { type: SchemaTypeAny.STRING },
-                                    basePricing: { type: SchemaTypeAny.NUMBER },
-                                    quality: { type: SchemaTypeAny.NUMBER },
-                                    brandPower: { type: SchemaTypeAny.NUMBER },
-                                    budget: { type: SchemaTypeAny.NUMBER },
-                                }
-                            }
-                        },
-                        marketContext: {
-                            type: SchemaTypeAny.OBJECT,
-                            properties: {
-                                visitsPerMonth: { type: SchemaTypeAny.NUMBER },
-                                sentiment: { type: SchemaTypeAny.NUMBER },
-                                description: { type: SchemaTypeAny.STRING }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        const txt = (response as any).text;
-        return JSON.parse(typeof txt === 'function' ? txt() : txt);
-    });
+    const prompt = `Analyze this idea: "${idea}" in "${region}". Return JSON with 5 competitors (1 user, 4 real), visitsPerMonth, sentiment (0-1).`;
+    const txt = await callGemini(prompt, false, 3); // Priority 3 for initialization
+    return JSON.parse(txt);
 };
 
 export const getStrategicIntervention = async (marketState: MarketState): Promise<any> => {
-    return withRetry(async () => {
-        const response = await ai.models.generateContent({
-            model: MODEL_NAME,
-            contents: `Simulate month ${marketState.tick} for ${marketState.region}. Update strategy.`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: SchemaTypeAny.OBJECT,
-                    properties: {
-                        updates: {
-                            type: SchemaTypeAny.ARRAY,
-                            items: {
-                                type: SchemaTypeAny.OBJECT,
-                                properties: {
-                                    agentId: { type: SchemaTypeAny.STRING },
-                                    pricingChange: { type: SchemaTypeAny.NUMBER },
-                                    qualityAdjustment: { type: SchemaTypeAny.NUMBER },
-                                    newStrategy: { type: SchemaTypeAny.STRING },
-                                    reasoning: { type: SchemaTypeAny.STRING }
-                                }
-                            }
-                        },
-                        marketEvent: {
-                            type: SchemaTypeAny.OBJECT,
-                            properties: {
-                                title: { type: SchemaTypeAny.STRING },
-                                description: { type: SchemaTypeAny.STRING },
-                                impact: { type: SchemaTypeAny.STRING }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-        const txt = (response as any).text;
-        return JSON.parse(typeof txt === 'function' ? txt() : txt);
-    });
+    const prompt = `Simulate month ${marketState.tick} for ${marketState.region}. Update strategy.`;
+    const txt = await callGemini(prompt, false, 1); // Priority 1 for updates
+    return JSON.parse(txt);
 };
 
 export interface FinalReportData {
@@ -128,29 +181,40 @@ export interface FinalReportData {
 }
 
 export const generateFinalAnalysis = async (marketState: MarketState): Promise<FinalReportData> => {
-    return withRetry(async () => {
-        const response = await ai.models.generateContent({
-            model: PRO_MODEL_NAME,
-            contents: `Generate final report for ${marketState.region}. Return JSON.`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: SchemaTypeAny.OBJECT,
-                    properties: {
-                        feasibilityScore: { type: SchemaTypeAny.NUMBER },
-                        verdict: { type: SchemaTypeAny.STRING },
-                        summary: { type: SchemaTypeAny.STRING },
-                        comparison: { type: SchemaTypeAny.ARRAY, items: { type: SchemaTypeAny.OBJECT, properties: { attribute: { type: SchemaTypeAny.STRING }, user: { type: SchemaTypeAny.NUMBER }, leader: { type: SchemaTypeAny.NUMBER } } } },
-                        positioningMap: { type: SchemaTypeAny.ARRAY, items: { type: SchemaTypeAny.OBJECT, properties: { name: { type: SchemaTypeAny.STRING }, quality: { type: SchemaTypeAny.NUMBER }, price: { type: SchemaTypeAny.NUMBER }, isUser: { type: SchemaTypeAny.BOOLEAN } } } },
-                        successDrivers: { type: SchemaTypeAny.ARRAY, items: { type: SchemaTypeAny.OBJECT, properties: { factor: { type: SchemaTypeAny.STRING }, score: { type: SchemaTypeAny.NUMBER } } } },
-                        headToHead: { type: SchemaTypeAny.OBJECT, properties: { userRevenue: { type: SchemaTypeAny.STRING }, leaderRevenue: { type: SchemaTypeAny.STRING }, userMarketShare: { type: SchemaTypeAny.STRING }, leaderMarketShare: { type: SchemaTypeAny.STRING }, priceCompetitive: { type: SchemaTypeAny.STRING }, qualityCompetitive: { type: SchemaTypeAny.STRING } } },
-                        swot: { type: SchemaTypeAny.OBJECT, properties: { strengths: { type: SchemaTypeAny.ARRAY, items: { type: SchemaTypeAny.STRING } }, weaknesses: { type: SchemaTypeAny.ARRAY, items: { type: SchemaTypeAny.STRING } }, opportunities: { type: SchemaTypeAny.ARRAY, items: { type: SchemaTypeAny.STRING } }, threats: { type: SchemaTypeAny.ARRAY, items: { type: SchemaTypeAny.STRING } } } },
-                        recommendation: { type: SchemaTypeAny.STRING }
-                    }
-                }
-            }
-        });
-        const txt = (response as any).text;
-        return JSON.parse(typeof txt === 'function' ? txt() : txt);
-    });
+    const winner = marketState.agents.reduce((prev, curr) =>
+        curr.revenue > prev.revenue ? curr : prev
+    );
+
+    const prompt = `You are a high-level business strategy consultant. Analyze this market simulation:
+Region: ${marketState.region}
+Final Results: ${JSON.stringify(marketState.agents.map(a => ({ name: a.name, share: a.marketShare, revenue: a.revenue })))}
+
+Return a strict JSON object with this structure:
+{
+  "feasibilityScore": number (1-10),
+  "verdict": "Sustain | Pivot | Exit | Scape",
+  "summary": "2-3 sentence strategic executive summary",
+  "comparison": [
+    { "attribute": "Pricing", "user": number (1-10), "leader": number (1-10) },
+    { "attribute": "Quality", "user": number (1-10), "leader": number (1-10) },
+    { "attribute": "Brand", "user": number (1-10), "leader": number (1-10) },
+    { "attribute": "Speed", "user": number (1-10), "leader": number (1-10) }
+  ],
+  "successDrivers": [
+    { "factor": "Market Penetration", "score": number (0-100) },
+    { "factor": "Cost Leadership", "score": number (0-100) },
+    { "factor": "Innovation", "score": number (0-100) }
+  ],
+  "swot": {
+    "strengths": ["string"],
+    "weaknesses": ["string"],
+    "opportunities": ["string"],
+    "threats": ["string"]
+  },
+  "recommendation": "Final strategic advice"
+}`;
+    const txt = await callGemini(prompt, true, 2);
+    const jsonMatch = txt.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("Invalid report format");
+    return JSON.parse(jsonMatch[0]);
 };
