@@ -67,5 +67,3 @@ export async function POST(req: NextRequest) {
         );
     }
 }
-
-// Handler for GET /api/simulation/:id is handled in the dynamic route

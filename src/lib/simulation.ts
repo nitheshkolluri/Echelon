@@ -1,5 +1,5 @@
 
-import { MarketState, Agent } from "./types";
+import type { MarketState, Agent } from "./types";
 
 export const runSimulationTick = (state: MarketState): MarketState => {
     const { agents, marketSentiment, populationScale, visitsPerMonth } = state;

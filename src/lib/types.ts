@@ -8,7 +8,7 @@ export enum AgentRole {
 
 export type AgentArchetype = 'Budget Provider' | 'Premium Leader' | 'Value Specialist' | 'High-End Boutique' | 'Rapid Expansionist';
 
-export interface Agent {
+export type Agent = {
     id: string;
     name: string;
     role: AgentRole;
@@ -33,7 +33,7 @@ export interface Agent {
     }>;
 }
 
-export interface MarketState {
+export type MarketState = {
     region: string;
     populationScale: number; // Instead of TAM, we use potential customers
     visitsPerMonth: number; // How often a person buys this product/service
@@ -45,7 +45,7 @@ export interface MarketState {
     events: MarketEvent[];
 }
 
-export interface MarketEvent {
+export type MarketEvent = {
     tick: number;
     title: string;
     description: string;

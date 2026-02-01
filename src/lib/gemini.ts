@@ -1,8 +1,7 @@
 "use server";
 
 import { GoogleGenAI } from "@google/genai";
-import { Agent, type MarketState } from "./types";
-export type { MarketState };
+import type { Agent, MarketState } from "./types";
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 const MODEL_NAME = 'gemini-2.0-flash';
@@ -169,15 +168,22 @@ export const getStrategicIntervention = async (marketState: MarketState): Promis
     return JSON.parse(txt);
 };
 
+export interface SWOTData {
+    strengths: string[];
+    weaknesses: string[];
+    opportunities: string[];
+    threats: string[];
+}
+
 export interface FinalReportData {
     feasibilityScore: number;
     verdict: string;
     summary: string;
-    comparison: any[];
-    positioningMap: any[];
-    successDrivers: any[];
-    headToHead: any;
-    swot: any;
+    comparison: Array<{ attribute: string; user: number; leader: number }>;
+    positioningMap?: any[];
+    successDrivers: Array<{ factor: string; score: number }>;
+    headToHead?: any;
+    swot: SWOTData;
     recommendation: string;
 }
 

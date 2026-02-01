@@ -11,7 +11,8 @@ import {
     ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
     BarChart, Bar, XAxis, YAxis, Tooltip, Cell
 } from 'recharts';
-import { FinalReportData, MarketState } from '@/lib/gemini';
+import type { FinalReportData } from '@/lib/gemini';
+import type { MarketState } from '@/lib/types';
 
 const scoreColor = (score: number) => {
     if (score >= 8) return 'text-emerald-500';
@@ -157,7 +158,7 @@ export const AnalysisReport = ({ finalAnalysis, marketState, onReset }: { finalA
                                 <s.icon size={16} /> {s.title}
                             </h4>
                             <ul className="space-y-2">
-                                {(s.items || []).slice(0, 2).map((item, idx) => (
+                                {(s.items || []).slice(0, 2).map((item: string, idx: number) => (
                                     <li key={idx} className="text-xs text-slate-300 flex items-start gap-2">
                                         <span className="mt-1 w-1 h-1 rounded-full bg-slate-500 shrink-0" /> {item}
                                     </li>

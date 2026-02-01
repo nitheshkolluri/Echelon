@@ -13,8 +13,9 @@ import {
     AreaChart, Area
 } from 'recharts';
 
-import { Agent, MarketState } from '@/lib/types';
+import type { Agent, MarketState } from '@/lib/types';
 import { authApi, simulationApi, reportApi } from '@/lib/api';
+import type { FinalReportData } from '@/lib/gemini';
 import { Sidebar } from '@/components/Sidebar';
 import { AnalysisReport } from '@/components/AnalysisReport';
 
@@ -44,7 +45,7 @@ const App: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [simulationId, setSimulationId] = useState<string | null>(null);
     const [marketState, setMarketState] = useState<MarketState | null>(null);
-    const [finalAnalysis, setFinalAnalysis] = useState<any | null>(null);
+    const [finalAnalysis, setFinalAnalysis] = useState<FinalReportData | null>(null);
     const [logs, setLogs] = useState<string[]>([]);
     const [progress, setProgress] = useState(0);
     const [errorToast, setErrorToast] = useState<string | null>(null);

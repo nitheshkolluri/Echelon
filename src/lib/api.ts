@@ -1,4 +1,4 @@
-import { MarketState, Agent } from './types';
+import type { MarketState, Agent } from './types';
 
 const API_URL = '/api';
 
