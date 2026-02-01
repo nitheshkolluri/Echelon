@@ -3,7 +3,18 @@
 import { GoogleGenAI } from "@google/genai";
 import type { Agent, MarketState } from "./types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+let genAI: GoogleGenAI | null = null;
+const getGenAI = () => {
+    if (!genAI) {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            throw new Error("API key must be set when using the Gemini API. Please configure it in your environment variables.");
+        }
+        genAI = new GoogleGenAI({ apiKey });
+    }
+    return genAI;
+};
+
 const MODEL_NAME = 'gemini-2.0-flash';
 const PRO_MODEL_NAME = 'gemini-2.0-flash';
 
@@ -140,7 +151,7 @@ export async function withRetry<T>(fn: () => Promise<T>, maxRetries = 5, priorit
 export const callGemini = async (prompt: string, isPro = false, priority = 1): Promise<string> => {
     return withRetry(async () => {
         try {
-            const response = await (ai as any).models.generateContent({
+            const response = await (getGenAI() as any).models.generateContent({
                 model: isPro ? PRO_MODEL_NAME : MODEL_NAME,
                 contents: prompt
             });
