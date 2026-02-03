@@ -5,7 +5,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import {
     Trophy, Activity, Target, Shield, Zap, TrendingUp, AlertTriangle,
-    CheckCircle2, XCircle, ArrowRight, RotateCcw, Share2, Download
+    CheckCircle2, XCircle, ArrowRight, RotateCcw, Share2, Download,
+    MessageSquare, Database, FileText
 } from 'lucide-react';
 import {
     ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
@@ -48,8 +49,8 @@ export const AnalysisReport = ({ finalAnalysis, marketState, onReset }: { finalA
                 animate={{ opacity: 1, scale: 1 }}
                 className="relative overflow-hidden rounded-[3rem] bg-gradient-to-br from-indigo-900 via-slate-900 to-black p-10 sm:p-16 border border-slate-800 shadow-2xl"
             >
-                <div className="absolute top-0 right-0 p-12 opacity-10 pointer-events-none">
-                    <Trophy size={400} />
+                <div className="absolute -top-10 -right-10 opacity-10 pointer-events-none rotate-12 group">
+                    <img src="/logo.png" alt="Echelon Watermark" className="w-[500px] h-[500px] object-contain grayscale" />
                 </div>
 
                 <div className="relative z-10 grid lg:grid-cols-2 gap-12 items-center">
@@ -170,14 +171,41 @@ export const AnalysisReport = ({ finalAnalysis, marketState, onReset }: { finalA
 
             </div>
 
-            <div className="flex gap-4 pt-8 border-t border-slate-800">
-                <button onClick={onReset} className="flex-1 py-4 bg-white text-black rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors">
-                    <RotateCcw size={18} /> New Innovation
+            <div className="flex flex-col lg:flex-row gap-6 pt-10 border-t border-slate-800">
+                <button onClick={onReset} className="flex-1 py-5 bg-white text-black rounded-[2rem] font-black flex items-center justify-center gap-3 hover:bg-slate-200 transition-all active:scale-[0.98] shadow-xl">
+                    <RotateCcw size={20} /> Initialize New Innovation
                 </button>
-                <button className="px-8 py-4 bg-slate-800 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-slate-700 transition-colors">
-                    <Share2 size={18} /> Share Report
-                </button>
+
+                <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {[
+                        { id: 'copy', icon: Share2, label: 'Secure Link', color: 'text-indigo-400' },
+                        { id: 'mail', icon: MessageSquare, label: 'Email Report', color: 'text-blue-400' },
+                        { id: 'word', icon: Database, label: 'Word Doc', color: 'text-emerald-400' },
+                        { id: 'pdf', icon: FileText, label: 'PDF Audit', color: 'text-rose-400' }
+                    ].map((btn) => (
+                        <button
+                            key={btn.id}
+                            onClick={() => {
+                                if (btn.id === 'copy') {
+                                    const text = `Echelon AI Market Audit for ${marketState.region}: Viability Score ${finalAnalysis.feasibilityScore}/10. Verdict: ${finalAnalysis.verdict}.`;
+                                    navigator.clipboard.writeText(text);
+                                    alert("Strategic summary copied to secure clipboard!");
+                                } else {
+                                    alert(`${btn.label} export is currently in alpha and restricted to enterprise partners. Coming soon for Hackathon users.`);
+                                }
+                            }}
+                            className={`flex flex-col items-center justify-center gap-2 p-4 rounded-3xl border border-slate-800 transition-all hover:bg-white/5 group hover:border-slate-700/50 ${btn.id !== 'copy' && 'opacity-40'}`}
+                        >
+                            <btn.icon size={20} className={`${btn.color} group-hover:scale-125 transition-all duration-300`} />
+                            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-300 transition-colors">{btn.label}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
+
+            <p className="text-[10px] text-slate-600 text-center uppercase tracking-[0.25em] pt-8 font-bold opacity-50">
+                Strategic Intelligence Protocol • Gemini 2.0 Flash Simulation • Probabilistic Model Disclaimer Applied
+            </p>
         </div>
     );
 };
