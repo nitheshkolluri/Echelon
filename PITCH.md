@@ -48,4 +48,4 @@ Using **Google Gemini 2.0 Flash**, we create a living market simulation where:
 ---
 
 **GitHub**: https://github.com/nitheshkolluri/Echelon  
-**Author**: Nithesh Kolluri
+**Authors**: Nithesh Kolluri & Tanvir Rahman Taiyeb

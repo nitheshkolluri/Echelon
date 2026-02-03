@@ -325,11 +325,16 @@ Every decision includes reasoning:
 
 ---
 
-## 👨‍💻 **ABOUT THE CREATOR**
+## 👥 **ABOUT THE TEAM**
 
-**Nithesh Kolluri** - Full-Stack Developer & AI Enthusiast
+**Nithesh Kolluri**  
+*Principal Developer & Lead Architect*  
+AI Engineer and Full-Stack Developer passionate about democratizing market research using cutting-edge Gemini technology.
 
-Built Echelon to democratize market research using cutting-edge AI. Passionate about making entrepreneurship more accessible through technology.
+**Tanvir Rahman Taiyeb**  
+*Cyber Security Specialist & Full-Stack Engineer*  
+Expert in security protocols and systems engineering, ensuring Echelon's infrastructure is robust and secure for enterprise-level simulations.
+
 
 ---
 

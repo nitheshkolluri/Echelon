@@ -87,6 +87,10 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## 👥 Authors
 
 **Nithesh Kolluri**  
-*Lead Developer & Architect*
+*Principal Developer & Lead Architect*
+
+**Tanvir Rahman Taiyeb**  
+*Cyber Security Specialist & Full-Stack Engineer*
 
 Built for the Google Gemini 3 Hackathon.
+
