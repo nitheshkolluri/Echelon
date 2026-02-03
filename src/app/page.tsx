@@ -15,7 +15,7 @@ import {
 
 import type { Agent, MarketState } from '@/lib/types';
 import { authApi, simulationApi, reportApi } from '@/lib/api';
-import type { FinalReportData } from '@/lib/gemini';
+import type { FinalReportData } from '@/lib/reportTypes';
 import { Sidebar } from '@/components/Sidebar';
 import { AnalysisReport } from '@/components/AnalysisReport';
 

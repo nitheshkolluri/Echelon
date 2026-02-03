@@ -11,7 +11,7 @@ import {
     ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
     BarChart, Bar, XAxis, YAxis, Tooltip, Cell
 } from 'recharts';
-import type { FinalReportData } from '@/lib/gemini';
+import type { FinalReportData } from '@/lib/reportTypes';
 import type { MarketState } from '@/lib/types';
 
 const scoreColor = (score: number) => {
