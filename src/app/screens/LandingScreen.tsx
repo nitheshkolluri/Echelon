@@ -18,6 +18,8 @@ type Props = {
   isLoading: boolean;
 };
 
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+
 const LandingScreen: React.FC<Props> = ({
   idea,
   setIdea,
@@ -28,6 +30,32 @@ const LandingScreen: React.FC<Props> = ({
   startSimulation,
   isLoading,
 }) => {
+  const handleDurationChange = (raw: string) => {
+    // Allow user to clear the field without crashing
+    if (raw.trim() === "") {
+      setDuration(0);
+      return;
+    }
+
+    const n = Number(raw);
+
+    // Guard against NaN (and weird cases)
+    if (!Number.isFinite(n)) {
+      setDuration(0);
+      return;
+    }
+
+    // Keep it clean: whole months + clamp to a reasonable range
+    setDuration(clamp(Math.floor(n), 1, 60));
+  };
+
+  const canStart =
+    !isLoading &&
+    idea.trim().length > 0 &&
+    region.trim().length > 0 &&
+    Number.isFinite(duration) &&
+    duration >= 1;
+
   return (
     <motion.div
       key="landing"
@@ -86,17 +114,24 @@ const LandingScreen: React.FC<Props> = ({
               <div className="relative">
                 <input
                   type="number"
-                  value={duration}
-                  onChange={(e) => setDuration(parseInt(e.target.value, 10))}
+                  min={1}
+                  max={60}
+                  value={Number.isFinite(duration) && duration > 0 ? duration : ""}
+                  onChange={(e) => handleDurationChange(e.target.value)}
+                  placeholder="24"
                   className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 px-6 text-white focus:outline-none focus:border-indigo-500/50 transition-all font-medium"
                 />
+
+                <p className="mt-2 text-[11px] text-gray-500 font-bold uppercase tracking-widest">
+                  Range: 1–60 months
+                </p>
               </div>
             </div>
           </div>
 
           <button
             onClick={startSimulation}
-            disabled={isLoading || !idea || !region}
+            disabled={!canStart}
             className="w-full bg-white text-black font-black py-6 rounded-3xl hover:bg-gray-200 transition-all transform active:scale-95 flex items-center justify-center gap-3 text-lg disabled:opacity-50"
           >
             {isLoading ? (
