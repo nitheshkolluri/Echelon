@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import { Activity, Database, Terminal } from "lucide-react";
+import { Activity, Database, Terminal, AlertTriangle, ArrowLeft } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area } from "recharts";
 import type { MarketState } from "@/lib/types";
 
@@ -12,9 +12,11 @@ type Props = {
   progress: number;
   logs: string[];
   marketState: MarketState | null;
+  error?: string | null;
+  onReset?: () => void;
 };
 
-const SimulationScreen: React.FC<Props> = ({ progress, logs, marketState }) => {
+const SimulationScreen: React.FC<Props> = ({ progress, logs, marketState, error, onReset }) => {
   return (
     <motion.div
       key="simulation"
@@ -27,18 +29,43 @@ const SimulationScreen: React.FC<Props> = ({ progress, logs, marketState }) => {
           <Terminal className="text-emerald-400" />
           Simulation in Progress
         </h2>
-        <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-sm font-bold animate-pulse">
-          ACTIVE LIVE NODE
+        <div className={`px-4 py-2 ${error ? 'bg-red-500/10 border-red-500/20 text-red-500' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'} border rounded-xl text-sm font-bold ${!error && 'animate-pulse'}`}>
+          {error ? 'SIMULATION CORE FAILURE' : 'ACTIVE LIVE NODE'}
         </div>
       </div>
 
-      <div className="w-full bg-white/5 rounded-full h-4 overflow-hidden">
+      {error && (
         <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${progress}%` }}
-          className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500"
-        />
-      </div>
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-red-500/10 border border-red-500/20 p-8 rounded-[2rem] text-red-100 flex flex-col md:flex-row items-center gap-6"
+        >
+          <div className="w-16 h-16 rounded-2xl bg-red-500/20 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-8 h-8 text-red-500" />
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <h4 className="font-black uppercase tracking-widest text-xs text-red-500 mb-2">Protocol Failure: Strategic Validation</h4>
+            <p className="font-medium text-lg leading-relaxed mb-4">{error}</p>
+            <button
+              onClick={onReset}
+              className="px-6 py-2 bg-red-500 text-white rounded-xl font-bold text-sm hover:bg-red-600 transition-colors flex items-center gap-2 mx-auto md:mx-0"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Return to Mission Control
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+      {!error && (
+        <div className="w-full bg-white/5 rounded-full h-4 overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500"
+          />
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-6 flex-1 min-h-0">
         <div className="lg:col-span-2 bg-[#121212] rounded-[2rem] border border-white/10 p-8 flex flex-col">

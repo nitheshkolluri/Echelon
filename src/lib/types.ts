@@ -51,3 +51,18 @@ export type MarketEvent = {
     description: string;
     impact: 'positive' | 'negative' | 'neutral';
 }
+
+export type SimulationRecord = {
+    id: string;
+    status: "PENDING" | "RUNNING" | "COMPLETED" | "FAILED";
+    progress: number;
+    idea: string;
+    region: string;
+    createdAt: string;
+    completedAt?: string;
+    marketState?: MarketState;
+    agents?: Agent[];
+    events?: MarketEvent[];
+    report?: any;
+    error?: string;
+};

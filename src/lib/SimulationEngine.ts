@@ -40,6 +40,14 @@ export class SimulationEngine {
   async run(onProgress: (progress: number) => Promise<void>): Promise<SimulationResult> {
     console.log("🚀 Starting simulation:", this.params.idea);
 
+    // Step 0: Validate idea (2% progress)
+    await onProgress(2);
+    const validation = await this.validateIdea();
+    if (!validation.valid) {
+      console.warn("🚫 Idea validation failed:", validation.reason);
+      throw new Error(validation.reason || "The provided idea does not appear to be a serious or valid business concept. Please refine your input.");
+    }
+
     // Step 1: Analyze idea and generate agents (5% progress)
     await onProgress(5);
     const agents = await this.generateAgents();
@@ -58,16 +66,20 @@ export class SimulationEngine {
 
       // Gemini checkpoint every 6 months
       if (tick > 0 && tick % checkpointInterval === 0) {
-        const updates = await this.getGeminiStrategyUpdates();
-        this.state = this.applyGeminiUpdates(this.state, updates);
+        try {
+          const updates = await this.getGeminiStrategyUpdates();
+          this.state = this.applyGeminiUpdates(this.state, updates);
 
-        // IMPORTANT: MarketEvent shape must match types.ts
-        this.state.events.push({
-          tick,
-          title: "Strategy Update",
-          description: "Agents adjusted their strategies",
-          impact: "neutral",
-        });
+          // IMPORTANT: MarketEvent shape must match types.ts
+          this.state.events.push({
+            tick,
+            title: "Strategy Update",
+            description: "Agents adjusted their strategies based on market performance.",
+            impact: "neutral",
+          });
+        } catch (err) {
+          console.warn(`⚠️ Strategy update failed for tick ${tick}, skipping...`);
+        }
       }
 
       // Progress: 10% + (tick / totalTicks * 80%)
@@ -88,6 +100,45 @@ export class SimulationEngine {
       events: this.state.events,
       report,
     };
+  }
+
+  /**
+   * Validate if the idea is a serious business concept
+   */
+  private async validateIdea(): Promise<{ valid: boolean; reason?: string }> {
+    const prompt = `You are an elite business integrity validator. Analyze the following business idea and determine if it is a serious, relevant, and valid business or project concept that can be simulated.
+
+**Idea**: ${this.params.idea}
+**Region**: ${this.params.region}
+
+CRITERIA FOR REJECTION (valid: false):
+1. **Illegal Content**: Drugs, weapons, human trafficking, fraud, or any criminal activity.
+2. **Adult/18+ Content**: Sexually explicit material, NSFW services, or adult-only entertainment.
+3. **Vague/Amorphous Language**: Ideas that are too broad to simulate (e.g., "I want to do business", "make money online", "help people"). They must have a specific sector or mechanism.
+4. **Gibberish/Low Effort**: Random characters (e.g., "hjklasdf"), spam, or single-word inputs that are not businesses (e.g., "cool", "test").
+5. **Nonsensical/Impossible**: Concepts that defy physical or economic reality (e.g., "teleportation to Mars for $1").
+
+If it is a valid, ethical, and simulation-ready business idea - even if highly niche - mark it as valid.
+
+Return ONLY a valid JSON object:
+{
+  "valid": boolean,
+  "reason": "Professional, concise explanation for rejection (starting with 'Rejection: ...'), or null if valid"
+}`;
+
+    try {
+      const text = await callGemini(prompt, false, 3);
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return { valid: true };
+      const parsed = JSON.parse(jsonMatch[0]);
+      return {
+        valid: !!parsed.valid,
+        reason: parsed.reason || null
+      };
+    } catch (error) {
+      console.error("Error validating idea:", error);
+      return { valid: true }; // Allow on API failure to stay resilient
+    }
   }
 
   /**
@@ -258,16 +309,16 @@ Return ONLY valid JSON array:
 
 **Current State** (Month ${this.state.tick}):
 ${JSON.stringify(
-  this.state.agents.map((a) => ({
-    name: a.name,
-    marketShare: (a.marketShare * 100).toFixed(1) + "%",
-    revenue: a.revenue.toFixed(0),
-    pricing: a.currentPricing,
-    quality: a.quality,
-  })),
-  null,
-  2
-)}
+      this.state.agents.map((a) => ({
+        name: a.name,
+        marketShare: (a.marketShare * 100).toFixed(1) + "%",
+        revenue: a.revenue.toFixed(0),
+        pricing: a.currentPricing,
+        quality: a.quality,
+      })),
+      null,
+      2
+    )}
 
 Return ONLY valid JSON array with strategic adjustments:
 [

@@ -1,4 +1,6 @@
-const globalForSims = global as unknown as { simulations: Record<string, any> };
+import type { SimulationRecord } from "./types";
+
+const globalForSims = global as unknown as { simulations: Record<string, SimulationRecord> };
 
 if (!globalForSims.simulations) {
     globalForSims.simulations = {};

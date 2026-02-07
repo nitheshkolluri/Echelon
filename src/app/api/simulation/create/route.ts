@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SimulationEngine } from "@/lib/SimulationEngine";
 import { simulations } from "@/lib/store";
-import type { SimulationRecord } from "@/lib/store";
+import type { SimulationRecord } from "@/lib/types";
 
 type CreateSimulationBody = {
   idea?: unknown;
@@ -152,12 +152,13 @@ export async function POST(req: NextRequest) {
           report: result.report,
           completedAt,
         };
-      } catch (err) {
+      } catch (err: any) {
         console.error("Simulation background error:", err);
         const current = simulations[simulationId];
         if (current) {
           current.status = "FAILED";
           current.progress = Math.min(current.progress ?? 0, 99);
+          current.error = err?.message || "Internal simulation engine error.";
         }
       }
     })();
