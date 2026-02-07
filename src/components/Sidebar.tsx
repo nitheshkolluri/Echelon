@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-type AppView =
+export type AppView =
   | "landing"
   | "setup"
   | "simulation"
@@ -20,7 +20,8 @@ type AppView =
   | "history"
   | "lab"
   | "gemini"
-  | "account";
+  | "account"
+  | "error";
 
 type User = {
   name: string;
@@ -48,12 +49,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     icon: React.ElementType;
     label: string;
   }> = [
-    { id: "landing", icon: LayoutDashboard, label: "Dashboard" },
-    { id: "history", icon: History, label: "Sim History" },
-    { id: "lab", icon: BarChart3, label: "Market Lab" },
-    { id: "gemini", icon: Zap, label: "Gemini 2.0" },
-    { id: "account", icon: Settings, label: "Account" },
-  ];
+      { id: "landing", icon: LayoutDashboard, label: "Dashboard" },
+      { id: "history", icon: History, label: "Sim History" },
+      { id: "lab", icon: BarChart3, label: "Market Lab" },
+      { id: "gemini", icon: Zap, label: "Gemini 2.0" },
+      { id: "account", icon: Settings, label: "Account" },
+    ];
 
   const isLandingGroup = (view: AppView) =>
     view === "landing" ||
@@ -92,9 +93,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <motion.aside
         initial={false}
         animate={{ width: isOpen ? 280 : 80 }}
-        className={`fixed inset-y-0 left-0 bg-[#0d0d0d] border-r border-white/5 z-50 flex flex-col transition-all duration-300 ease-in-out ${
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        }`}
+        className={`fixed inset-y-0 left-0 bg-[#0d0d0d] border-r border-white/5 z-50 flex flex-col transition-all duration-300 ease-in-out ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          }`}
       >
         {/* Subtle background glow (premium) */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -181,11 +181,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   onClick={() => handleNavigate(item.id)}
                   aria-label={item.label}
                   aria-current={active ? "page" : undefined}
-                  className={`w-full flex items-center h-12 rounded-xl transition-all duration-200 relative overflow-hidden ${
-                    active
-                      ? "text-indigo-200"
-                      : "text-gray-500 hover:bg-white/5 hover:text-white"
-                  }`}
+                  className={`w-full flex items-center h-12 rounded-xl transition-all duration-200 relative overflow-hidden ${active
+                    ? "text-indigo-200"
+                    : "text-gray-500 hover:bg-white/5 hover:text-white"
+                    }`}
                 >
                   {/* Animated active pill background */}
                   <AnimatePresence>
@@ -240,9 +239,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             type="button"
             onClick={() => handleNavigate("account")}
             aria-label="Open account"
-            className={`w-full p-2 rounded-2xl flex items-center gap-3 transition-all cursor-pointer border border-white/5 group relative overflow-hidden ${
-              !isOpen ? "justify-center border-transparent" : ""
-            } hover:border-indigo-500/20`}
+            className={`w-full p-2 rounded-2xl flex items-center gap-3 transition-all cursor-pointer border border-white/5 group relative overflow-hidden ${!isOpen ? "justify-center border-transparent" : ""
+              } hover:border-indigo-500/20`}
           >
             {/* Premium hover wash */}
             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity" />

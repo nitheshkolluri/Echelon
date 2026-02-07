@@ -8,7 +8,7 @@ import type { MarketState } from "@/lib/types";
 import { simulationApi } from "@/lib/api";
 import type { FinalReportData } from "@/lib/reportTypes";
 
-import { Sidebar } from "@/components/Sidebar";
+import { Sidebar, type AppView } from "@/components/Sidebar";
 import { AnalysisReport } from "@/components/AnalysisReport";
 
 // screens
@@ -18,6 +18,7 @@ import HistoryScreen from "@/app/screens/HistoryScreen";
 import LabScreen from "@/app/screens/LabScreen";
 import GeminiScreen from "@/app/screens/GeminiScreen";
 import AccountScreen from "@/app/screens/AccountScreen";
+import ErrorScreen from "@/app/screens/ErrorScreen";
 
 const App: React.FC = () => {
     // Guest User State (Auth removed per requirements)
@@ -28,9 +29,7 @@ const App: React.FC = () => {
     });
 
     // Navigation/View State
-    const [view, setView] = useState<
-        "landing" | "setup" | "simulation" | "analysis" | "history" | "lab" | "gemini" | "account"
-    >("landing");
+    const [view, setView] = useState<AppView>("landing");
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -111,6 +110,7 @@ const App: React.FC = () => {
         } catch (e: any) {
             setErrorToast(e.message || "Failed to start simulation");
             setIsLoading(false);
+            setView("error");
         }
     };
 
@@ -138,6 +138,7 @@ const App: React.FC = () => {
                     clearInterval(pollingRef.current!);
                     setErrorToast(sim.error || "Simulation engine encountered an error.");
                     setIsLoading(false);
+                    setView("error");
                 }
             } catch (err) {
                 console.error("Polling error:", err);
@@ -276,11 +277,21 @@ const App: React.FC = () => {
                         {view === "gemini" && <GeminiScreen />}
 
                         {view === "account" && <AccountScreen history={history} />}
+
+                        {view === "error" && (
+                            <ErrorScreen
+                                message={errorToast || "An unexpected system anomaly occurred."}
+                                onReset={() => {
+                                    setErrorToast(null);
+                                    setView("landing");
+                                }}
+                            />
+                        )}
                     </AnimatePresence>
                 </div>
             </main>
 
-            {errorToast && (
+            {errorToast && view !== "error" && (
                 <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-50">
                     <motion.div
                         initial={{ y: 20, opacity: 0 }}

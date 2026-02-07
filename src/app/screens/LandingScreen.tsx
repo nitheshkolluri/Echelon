@@ -86,7 +86,7 @@ const LandingScreen: React.FC<Props> = ({
             <textarea
               value={idea}
               onChange={(e) => setIdea(e.target.value)}
-              placeholder="e.g., A subscription-based health tech platform for seniors in rural India..."
+              placeholder="e.g., A boutique organic vineyard experience in the Barossa Valley focusing on sustainable tourism..."
               className="w-full bg-black/40 border border-white/10 rounded-2xl p-6 text-xl text-white placeholder:text-gray-700 min-h-[140px] focus:outline-none focus:border-indigo-500/50 focus:ring-4 focus:ring-indigo-500/10 transition-all resize-none"
             />
           </div>
@@ -101,7 +101,7 @@ const LandingScreen: React.FC<Props> = ({
                 <input
                   value={region}
                   onChange={(e) => setRegion(e.target.value)}
-                  placeholder="South Bangalore"
+                  placeholder="Sydney CBD, Australia"
                   className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 pl-14 pr-6 text-white placeholder:text-gray-700 focus:outline-none focus:border-indigo-500/50 transition-all font-medium"
                 />
               </div>
